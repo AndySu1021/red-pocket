@@ -2,7 +2,8 @@ package red_packet
 
 import (
 	"context"
-	"fmt"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
 	"math/rand"
 	"red-packet/pkg/model/dto"
 	"red-packet/pkg/model/option"
@@ -10,23 +11,96 @@ import (
 	"time"
 )
 
-func (s *service) Send(userId uint64, count uint64, amount uint64) (bool, error) {
-	activity := &dto.Activity{
-		Count:     count,
-		Amount:    amount,
-		CreatedBy: userId,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+func (s *service) Send(ctx context.Context, activity *dto.Activity) (bool, error) {
+	if err := s.repo.Transaction(ctx, func(tx *gorm.DB) (err error) {
+		err = s.repo.Create(ctx, nil, activity)
+		if err != nil {
+			return
+		}
 
-	// TODO: should use transaction to promise atomic
-	err := s.repo.Create(context.Background(), nil, activity)
-	if err != nil {
+		redPackets := genRedPacket(activity.ID, activity.Count, activity.Amount)
+
+		err = s.repo.Create(ctx, nil, &redPackets)
+		if err != nil {
+			return
+		}
+
+		return nil
+	}); err != nil {
 		return false, err
 	}
 
-	var redPacketIds []uint64
+	return true, nil
+}
 
+func (s *service) Grab(ctx context.Context, redPacketOpt *option.RedPacketOption, userOpt *option.UserOption) (uint64, error) {
+	lock, err := s.redisLock.Obtain(ctx, getRedisKey(redPacketOpt.RedPacket.ID), 5*time.Second, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	var amount uint64
+
+	if err = s.repo.Transaction(ctx, func(tx *gorm.DB) (err error) {
+		var redPackets []dto.RedPacket
+		_, err = s.repo.Get(ctx, nil, &redPackets, redPacketOpt)
+		if err != nil {
+			return
+		}
+
+		if len(redPackets) < 1 {
+			return errors.New("red packet not enough")
+		}
+
+		idx := rand.Int63n(int64(len(redPackets)))
+		redPacket := redPackets[idx]
+		amount = redPacket.Amount
+
+		opt2 := &option.RedPacketOption{
+			RedPacket: dto.RedPacket{
+				ID: redPacket.ID,
+			},
+		}
+
+		err = s.repo.Update(ctx, nil, opt2, &option.RedPacketUpdateColumn{
+			UserID:    userOpt.User.ID,
+			Status:    2,
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			return
+		}
+
+		var user dto.User
+		err = s.repo.GetOne(ctx, nil, &user, userOpt)
+		if err != nil {
+			return
+		}
+
+		err = s.repo.Update(ctx, nil, userOpt, &option.UserUpdateColumn{
+			Balance:   user.Balance + redPacket.Amount,
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			return
+		}
+
+		return nil
+	}); err != nil {
+		return 0, nil
+	}
+
+	err = lock.Release(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return amount, nil
+}
+
+const MinAmount = 1
+
+func genRedPacket(activityId uint64, count uint64, amount uint64) (result []dto.RedPacket) {
 	remain := amount
 	sum := uint64(0)
 	for i := uint64(0); i < count; i++ {
@@ -34,91 +108,19 @@ func (s *service) Send(userId uint64, count uint64, amount uint64) (bool, error)
 		remain -= x
 		sum += x
 
-		tmp := &dto.RedPacket{
-			ActivityID: activity.ID,
+		tmp := dto.RedPacket{
+			ActivityID: activityId,
 			UserID:     0,
 			Amount:     x,
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
 		}
 
-		err := s.repo.Create(context.Background(), nil, tmp)
-		if err != nil {
-			return false, err
-		}
-
-		redPacketIds = append(redPacketIds, tmp.ID)
+		result = append(result, tmp)
 	}
 
-	// TODO: need to promise atomic
-	for _, v := range redPacketIds {
-		total, err := s.cache.LPush(context.Background(), getRedisKey(activity.ID), v)
-		if err != nil {
-			return false, err
-		}
-
-		fmt.Println(total)
-	}
-
-	return true, nil
+	return
 }
-
-func (s *service) Grab(userId uint64, activityId uint64) (amount uint64, err error) {
-	amount = uint64(10)
-
-	result, err := s.cache.RPop(context.Background(), getRedisKey(activityId))
-	if err != nil {
-		return
-	}
-
-	redPacketId, err := strconv.ParseUint(result, 10, 64)
-	if err != nil {
-		return
-	}
-
-	var redPacket dto.RedPacket
-
-	opt := &option.RedPacketOption{
-		RedPacket: dto.RedPacket{
-			ID: redPacketId,
-		},
-	}
-	err = s.repo.Get(context.Background(), nil, &redPacket, opt)
-	if err != nil {
-		return
-	}
-
-	err = s.repo.Update(context.Background(), nil, opt, &option.RedPacketUpdateColumn{
-		UserID:    userId,
-		UpdatedAt: time.Now(),
-	})
-	if err != nil {
-		return
-	}
-
-	var user dto.User
-	userOpt := &option.UserOption{
-		User: dto.User{
-			ID: userId,
-		},
-	}
-	err = s.repo.Get(context.Background(), nil, &user, userOpt)
-	if err != nil {
-		return
-	}
-
-	err = s.repo.Update(context.Background(), nil, userOpt, &option.UserUpdateColumn{
-		Balance:   user.Balance + redPacket.Amount,
-		UpdatedAt: time.Now(),
-	})
-	if err != nil {
-		return
-	}
-
-	return redPacket.Amount, nil
-}
-
-const MinAmount = 1
 
 func doubleAverage(count, amount uint64) uint64 {
 	if count == 1 {

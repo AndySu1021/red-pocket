@@ -2,9 +2,9 @@ package cache
 
 import (
 	"context"
-	iface "demo/pkg/interface"
-	"demo/util/redis"
 	"go.uber.org/fx"
+	iface "red-packet/pkg/interface"
+	"red-packet/util/redis"
 	"time"
 )
 

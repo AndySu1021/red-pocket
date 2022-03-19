@@ -1,9 +1,9 @@
 package restful
 
 import (
-	iface "demo/pkg/interface"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
+	iface "red-packet/pkg/interface"
 )
 
 type handler struct {

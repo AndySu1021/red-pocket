@@ -1,12 +1,12 @@
 package config
 
 import (
-	"demo/util/db"
-	"demo/util/gin"
-	"demo/util/redis"
-	zlog "demo/util/zerolog"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
+	"red-packet/util/db"
+	"red-packet/util/gin"
+	"red-packet/util/redis"
+	zlog "red-packet/util/zerolog"
 )
 
 // AppConfig APP設定

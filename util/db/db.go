@@ -94,6 +94,7 @@ func NewDatabase(cfg *Config) (db *gorm.DB, err error) {
 			Logger:                                   newLogger,
 			PrepareStmt:                              true,
 			DisableForeignKeyConstraintWhenMigrating: true,
+			SkipDefaultTransaction:                   true,
 		})
 		if err != nil {
 			log.Error().Msgf("Fail to open conn, err: %+v", err)

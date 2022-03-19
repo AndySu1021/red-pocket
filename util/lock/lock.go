@@ -1,8 +1,8 @@
 package lock
 
 import (
-	"demo/util/redis"
 	"github.com/bsm/redislock"
+	"red-packet/util/redis"
 )
 
 func NewRedisLocker(redis redis.Redis) *redislock.Client {

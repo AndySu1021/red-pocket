@@ -1,10 +1,10 @@
 package main
 
 import (
-	"demo/cmd"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"red-packet/cmd"
 	"runtime"
 )
 

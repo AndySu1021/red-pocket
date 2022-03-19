@@ -1,8 +1,8 @@
 package restful
 
 import (
-	iface "demo/pkg/interface"
-	ginTool "demo/util/gin"
+	iface "red-packet/pkg/interface"
+	ginTool "red-packet/util/gin"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"

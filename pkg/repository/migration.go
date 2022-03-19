@@ -1,10 +1,10 @@
 package repository
 
 import (
-	iface "demo/pkg/interface"
-	"demo/pkg/model/dto"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	iface "red-packet/pkg/interface"
+	"red-packet/pkg/model/dto"
 )
 
 func Migration(repo iface.IRepository) error {

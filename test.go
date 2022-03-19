@@ -31,28 +31,23 @@ func main() {
 }
 
 func moveOnto(arr *[4]*Block, a int, b int) {
-	curr := arr[a]
-	prev := curr
-	for curr != nil {
-		if curr.Val != a {
-			arr[curr.Val] = curr
-			prev.Next = nil
-		}
-		prev = curr
-		curr = curr.Next
-	}
-
-	curr = arr[b]
-	prev = curr
-	for curr != nil {
-		if curr.Val != b {
-			arr[curr.Val] = curr
-			prev.Next = nil
-		}
-		prev = curr
-		curr = curr.Next
-	}
+	// 復原
+	recovery(arr, a)
+	recovery(arr, b)
 
 	arr[b].Next = arr[a]
 	arr[a] = nil
+}
+
+func recovery(arr *[4]*Block, idx int) {
+	curr := arr[idx]
+	prev := curr
+	for curr != nil {
+		if curr.Val != idx {
+			arr[curr.Val] = curr
+			prev.Next = nil
+		}
+		prev = curr
+		curr = curr.Next
+	}
 }

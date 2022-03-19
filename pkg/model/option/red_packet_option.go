@@ -13,7 +13,10 @@ type RedPacketOption struct {
 
 func (where *RedPacketOption) Where(db *gorm.DB) *gorm.DB {
 	db = db.Where(where.RedPacket)
+	return db
+}
 
+func (where *RedPacketOption) Preload(db *gorm.DB) *gorm.DB {
 	return db
 }
 
@@ -25,12 +28,9 @@ func (where *RedPacketOption) TableName() string {
 	return where.RedPacket.TableName()
 }
 
-func (where *RedPacketOption) Preload(db *gorm.DB) *gorm.DB {
-	return db
-}
-
 type RedPacketUpdateColumn struct {
 	UserID    uint64
+	Status    int8
 	UpdatedAt time.Time
 }
 

@@ -2,10 +2,11 @@ package repository
 
 import (
 	"context"
-	iface "demo/pkg/interface"
+	"database/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/fx"
 	"gorm.io/gorm"
+	iface "red-packet/pkg/interface"
 )
 
 type repository struct {
@@ -38,7 +39,24 @@ func (repo *repository) GetDB() *gorm.DB {
 	return repo.db
 }
 
-func (repo *repository) Get(ctx context.Context, tx *gorm.DB, model iface.Model, opt iface.WhereOption, scopes ...func(*gorm.DB) *gorm.DB) error {
+func (repo *repository) Get(ctx context.Context, tx *gorm.DB, data interface{}, opt iface.WhereOption, scopes ...func(*gorm.DB) *gorm.DB) (total int64, err error) {
+	if tx == nil {
+		tx = repo.db.WithContext(ctx)
+	}
+	tx = tx.Scopes(scopes...)
+
+	db := tx.Table(opt.TableName()).Model(data).Scopes(opt.Where)
+
+	db = opt.Preload(tx)
+	err = db.Scopes(opt.Where).Find(data).Error
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (repo *repository) GetOne(ctx context.Context, tx *gorm.DB, model iface.Model, opt iface.WhereOption, scopes ...func(*gorm.DB) *gorm.DB) error {
 	if tx == nil {
 		tx = repo.db.WithContext(ctx)
 	}
@@ -51,7 +69,7 @@ func (repo *repository) Get(ctx context.Context, tx *gorm.DB, model iface.Model,
 	return nil
 }
 
-func (repo *repository) Create(ctx context.Context, tx *gorm.DB, data iface.Model, scopes ...func(*gorm.DB) *gorm.DB) error {
+func (repo *repository) Create(ctx context.Context, tx *gorm.DB, data interface{}, scopes ...func(*gorm.DB) *gorm.DB) error {
 	if tx == nil {
 		tx = repo.db.WithContext(ctx)
 	}
@@ -86,4 +104,11 @@ func (repo *repository) Delete(ctx context.Context, tx *gorm.DB, model iface.Mod
 		return err
 	}
 	return nil
+}
+
+func (repo *repository) Transaction(ctx context.Context, fc func(tx *gorm.DB) error, opts ...*sql.TxOptions) error {
+	return repo.db.Transaction(func(tx *gorm.DB) error {
+		tx = tx.WithContext(ctx)
+		return fc(tx)
+	}, opts...)
 }

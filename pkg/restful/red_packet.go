@@ -3,6 +3,9 @@ package restful
 import (
 	"fmt"
 	"net/http"
+	"red-packet/pkg/model/dto"
+	"red-packet/pkg/model/option"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +22,15 @@ func (h *handler) Send(c *gin.Context) {
 		return
 	}
 	userId := uint64(1)
-	result, err := h.redPacketSvc.Send(userId, params.Count, params.Amount)
+
+	activity := dto.Activity{
+		Count:     params.Count,
+		Amount:    params.Amount,
+		CreatedBy: userId,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	result, err := h.redPacketSvc.Send(c.Request.Context(), &activity)
 	if !result || err != nil {
 		fmt.Println(err)
 	}
@@ -38,7 +49,21 @@ func (h *handler) Grab(c *gin.Context) {
 		return
 	}
 	userId := uint64(1)
-	amount, err := h.redPacketSvc.Grab(userId, params.ActivityId)
+
+	redPacketOpt := option.RedPacketOption{
+		RedPacket: dto.RedPacket{
+			ActivityID: params.ActivityId,
+			Status:     1,
+		},
+	}
+
+	userOpt := option.UserOption{
+		User: dto.User{
+			ID: userId,
+		},
+	}
+
+	amount, err := h.redPacketSvc.Grab(c.Request.Context(), &redPacketOpt, &userOpt)
 	if err != nil {
 		fmt.Println(err)
 	}
