@@ -2,10 +2,8 @@ package http
 
 import (
 	"fmt"
-	"go.uber.org/fx"
 	"io/ioutil"
 	"net/http"
-	iface "red-packet/util/interface"
 	"time"
 )
 
@@ -23,7 +21,7 @@ func (c *Client) SetRequest(request *http.Request) {
 }
 
 func (c *Client) Send() (responseBody string, err error) {
-	var client = &http.Client{Timeout: c.Timeout}
+	client := &http.Client{Timeout: c.Timeout}
 
 	response, err := client.Do(c.Request)
 	if err != nil {
@@ -43,17 +41,4 @@ func (c *Client) Send() (responseBody string, err error) {
 	}
 
 	return string(body), nil
-}
-
-var Module = fx.Options(
-	fx.Provide(
-		NewHttpClient,
-	),
-)
-
-func NewHttpClient() iface.IHttpClient {
-	return &Client{
-		Request: nil,
-		Timeout: 5 * time.Second,
-	}
 }
