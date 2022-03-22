@@ -34,7 +34,7 @@ func (s *service) Send(ctx context.Context, activity *dto.Activity) (bool, error
 }
 
 func (s *service) Grab(ctx context.Context, redPacketOpt *option.RedPacketOption, userOpt *option.UserOption) (uint64, error) {
-	lock, err := s.redisLock.Obtain(ctx, getRedisKey(redPacketOpt.RedPacket.ID), 5*time.Second, nil)
+	lock, err := s.redisLock.Obtain(ctx, getRedisKey(redPacketOpt.RedPacket.ActivityID), 5*time.Second, nil)
 	if err != nil {
 		return 0, err
 	}

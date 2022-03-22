@@ -23,7 +23,7 @@ func LogRequest() gin.HandlerFunc {
 	}
 }
 
-func NewRequestIDMiddleware() gin.HandlerFunc {
+func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		traceID := c.Request.Header.Get("X-Trace-ID")
 		if traceID == "" {
@@ -41,6 +41,21 @@ func NewRequestIDMiddleware() gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 		c.Request.Header.Set("X-Trace-ID", traceID)
 		c.Writer.Header().Set("X-Trace-ID", traceID)
+		c.Next()
+	}
+}
+
+func RateLimiterMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if limiter == nil {
+			c.Next()
+		}
+
+		err := limiter.Wait(c.Request.Context())
+		if err != nil {
+			return
+		}
+
 		c.Next()
 	}
 }

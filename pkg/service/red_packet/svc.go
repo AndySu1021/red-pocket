@@ -4,11 +4,12 @@ import (
 	"github.com/bsm/redislock"
 	"go.uber.org/fx"
 	iface "red-packet/pkg/interface"
+	util "red-packet/util/interface"
 )
 
 type service struct {
 	repo      iface.IRepository
-	cache     iface.ICache
+	cache     util.ICache
 	redisLock *redislock.Client
 }
 
@@ -22,7 +23,7 @@ type Params struct {
 	fx.In
 
 	Repo      iface.IRepository
-	Cache     iface.ICache
+	Cache     util.ICache
 	RedisLock *redislock.Client
 }
 

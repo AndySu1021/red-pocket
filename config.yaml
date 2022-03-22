@@ -1,0 +1,34 @@
+## Log
+log:
+  local: true
+  level: 0
+  environment: local
+  app_name: demo
+
+## HTTP
+http:
+  mode: release
+  port: 8080
+  # 每秒請求數
+  rate_limit: 10
+
+# Database config
+database:
+  with_color: true
+  with_caller: true
+  debug: true
+  type: mysql
+  host: localhost
+  port: 3306
+  username: admin
+  password: abcd1234
+  db_name: demo
+  max_idle_connections: 50
+  max_open_connections: 100
+
+# Redis config
+redis:
+  cluster_mode: false
+  addresses: "localhost:6379"
+  password:
+  db: 0

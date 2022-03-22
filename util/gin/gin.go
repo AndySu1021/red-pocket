@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"go.uber.org/fx"
+	"golang.org/x/time/rate"
 	"net/http"
 	"time"
 
@@ -13,12 +14,20 @@ import (
 )
 
 type Config struct {
-	Mode string `mapstructure:"mode"`
-	Port string `mapstructure:"port"`
+	Mode      string `mapstructure:"mode"`
+	Port      string `mapstructure:"port"`
+	RateLimit int    `mapstructure:"rate_limit"`
 }
 
+var limiter *rate.Limiter
+
 func NewGin(lc fx.Lifecycle, cfg *Config) *gin.Engine {
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(cfg.Mode)
+
+	if cfg.RateLimit != 0 {
+		limiter = initRateLimiter(cfg.RateLimit)
+	}
+
 	var e = gin.New()
 
 	server := &http.Server{
@@ -45,12 +54,17 @@ func NewGin(lc fx.Lifecycle, cfg *Config) *gin.Engine {
 	})
 
 	e.Use(LogRequest())
-	e.Use(NewRequestIDMiddleware())
+	e.Use(RequestIDMiddleware())
+	e.Use(RateLimiterMiddleware())
 	//e.Use(NewRecoverMiddleware())
 	//e.Use(CORS())
 
 	pprof.Register(e)
 	return e
+}
+
+func initRateLimiter(rateLimit int) *rate.Limiter {
+	return rate.NewLimiter(rate.Every(time.Duration(rateLimit)*time.Second), rateLimit * 2)
 }
 
 // RegisterDefaultRoute provide default handler

@@ -23,8 +23,8 @@ type AppConfig struct {
 func NewConfig() (AppConfig, error) {
 	viper.AutomaticEnv()
 	viper.AddConfigPath("./")
-	viper.SetConfigName("app")
-	viper.SetConfigType("properties")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
 
 	var config = AppConfig{}
 

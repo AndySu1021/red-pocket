@@ -24,17 +24,17 @@ const (
 )
 
 type Config struct {
-	Debug              bool
-	Type               DatabaseType
-	Host               string
-	Port               int
-	Username           string
-	Password           string
-	DBName             string
-	MaxIdleConnections int `mapstructure:"max_idle_connections"`
-	MaxOpenConnections int `mapstructure:"max_open_connections"`
-	MaxLifetimeSec     int
-	WithColor          bool `mapstructure:"with_color"`
+	Debug              bool         `mapstructure:"debug"`
+	Type               DatabaseType `mapstructure:"type"`
+	Host               string       `mapstructure:"host"`
+	Port               int          `mapstructure:"port"`
+	Username           string       `mapstructure:"username"`
+	Password           string       `mapstructure:"password"`
+	DBName             string       `mapstructure:"db_name"`
+	MaxIdleConnections int          `mapstructure:"max_idle_connections"`
+	MaxOpenConnections int          `mapstructure:"max_open_connections"`
+	MaxLifetimeSec     int          `mapstructure:"max_lifetime_sec"`
+	WithColor          bool         `mapstructure:"with_color"`
 }
 
 func GetConnectionStr(cfg *Config) (connectionString string, err error) {
